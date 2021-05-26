@@ -2,6 +2,24 @@ import sqlite3, datetime, sys
 from tkinter import *
 import tkinter.simpledialog as simpledialog
 
+class TkTable:
+    def __init__(self,root,data):
+        rows = len(data)
+        columns = len(data[0])
+        for x in range(rows):
+            for y in range(columns):
+                self.e = Entry(root, width=20, font=('Calibri',12))
+                self.e.grid(row=x, column=y)
+                self.e.insert(END, data[x][y])
+
+def showHelp():
+    title = "track-time - Help"
+    text = "To add entry, app.py add"
+    text += "\nTo view today's entries, app.py listtoday"
+    text += "\nTo view all entries, app.py listall"
+    text += "\nTo clear all entries, app.py clear\n"
+    alertPopup(title,text,140)
+
 def checkTableExists(db):
     db.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='entries'")
     if db.fetchone()[0] == 1:
@@ -31,56 +49,84 @@ def getTodaysEntries(db):
 
 def clearEntries(db):
     db.execute("DELETE FROM entries")
-    alertPopup("Entries Cleared", "All entries have been cleared.")
+    alertPopup("Entries Cleared", "All entries have been cleared.", 60)
 
-def alertPopup(title, message):
+def alertPopup(title, message, height=100):
     base = Tk()
     base.title(title)
     width = 400
-    height = 200
     screenWidth = base.winfo_screenwidth()
     screenHeight = base.winfo_screenheight()
     xPos = (screenWidth - width)/2
     yPos = (screenHeight - height)/2
     base.geometry('%dx%d+%d+%d' % (width, height, xPos, yPos))
-    window = Label(base, text=message, width=80, height=10)
+    window = Label(base, text=message, width=80, font=("Calibri", 12))
     window.pack()
     button = Button(base, text="OK", command=base.destroy, width=10)
     button.pack()
     mainloop()
 
-def convertEntriesToText(entries):
-    text = ""
-    for listing in entries:
-        date = listing[0]
-        time = listing[1]
-        note = listing[2]
-        text += date + " - " + time + " - " + note + "\n"
-    return text
+def addEntryPopup(db):
+    def submitForm(event=None):
+        note = note_var.get()
+        print(note)
+        logTime(db, note)
+        base.destroy()
+
+    message = "Enter note for time entry\n"
+    base = Tk()
+    base.title("track-time - Add Entry")
+    note_var = StringVar()
+    width = 400
+    height = 300
+    screenWidth = base.winfo_screenwidth()
+    screenHeight = base.winfo_screenheight()
+    xPos = (screenWidth - width)/2
+    yPos = (screenHeight - height)/2
+    base.geometry('%dx%d+%d+%d' % (width, height, xPos, yPos))
+    window = Label(base, text=message, width=200, height=10, font=("Calibri", 12))
+    window.pack()
+    text = Entry(base, textvariable=note_var, width=180)
+    text.pack()
+    text.focus()
+    button = Button(base, text="Add", command=submitForm, width=15)
+    button.pack()
+    base.bind('<Return>', submitForm)
+    mainloop()
 
 def popupEntries(entries):
-    alertPopup("track-time - View Entries", entries)
+    base = Tk()
+    base.title("track-time - View Entries")
+    screenWidth = base.winfo_screenwidth()
+    screenHeight = base.winfo_screenheight()
+    xPos = screenWidth/4
+    yPos = screenHeight/4
+    base.geometry('+%d+%d' % (xPos, yPos))
+    table = TkTable(base,entries)
+    mainloop()
 
 def runApp():
     dbconnection = sqlite3.connect("track-time.db")
+    global db
     db = dbconnection.cursor()
     if len(sys.argv) > 2:
-        alertPopup("track-time - Error", "Too many arguments.")
+        alertPopup("track-time - Error", "Too many arguments.\n")
     else:
         if len(sys.argv) == 2:
             if sys.argv[1] == "listall":
-                popupEntries(convertEntriesToText(getAllEntries(db)))
+                popupEntries(getAllEntries(db))
             elif sys.argv[1] == "listtoday":
-                popupEntries(convertEntriesToText(getTodaysEntries(db)))
+                popupEntries(getTodaysEntries(db))
             elif sys.argv[1] == "add":
-                entryNote = input("Enter note for time entry: ")
-                logTime(db, entryNote)
+                addEntryPopup(db)
             elif sys.argv[1] == "clear":
                 clearEntries(db)
+            elif sys.argv[1] == "help":
+                showHelp()
             else:
-                alertPopup("track-time - Error", "Invalid argument.")
+                alertPopup("track-time - Error", "Invalid argument.\n")
         else:
-            popupEntries(convertEntriesToText(getTodaysEntries(db)))
+            showHelp()
     dbconnection.commit()
     dbconnection.close()
 
