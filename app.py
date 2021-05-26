@@ -159,21 +159,18 @@ def runApp():
     else:
         if len(sys.argv) == 2:
             if sys.argv[1] == "listall":
-                #popupEntries(getAllEntries(db))
-                listAll(db)
+                listAll()
             elif sys.argv[1] == "listtoday" or sys.argv[1] == "list":
-                #popupEntries(getTodaysEntries(db))
                 listToday()
             elif sys.argv[1] == "add":
                 addEntryPopup()
             elif sys.argv[1] == "clear":
-                clearEntries(db)
+                clearEntries()
             elif sys.argv[1] == "help":
                 showHelp()
             else:
                 alertPopup("track-time - Error", "Invalid argument.\n")
         else:
-            #showHelp()
             menuPopup()
     dbconnection.commit()
     dbconnection.close()
