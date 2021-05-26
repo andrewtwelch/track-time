@@ -25,34 +25,34 @@ def showHelp():
     text += "\nTo clear all entries, app.py clear\n"
     alertPopup(title,text,140)
 
-def checkTableExists(db):
+def checkTableExists():
     db.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='entries'")
     if db.fetchone()[0] == 1:
         return True
     else:
         return False
 
-def createTable(db, dbcon):
+def createTable():
     db.execute("CREATE TABLE entries (date TEXT, time TEXT, note TEXT)")
 
-def logTime(db, note):
+def logTime(note):
     now = datetime.datetime.now()
     date = now.strftime("%d/%m/%Y")
     time = now.strftime("%I:%M %p")
     sqladd = "INSERT INTO entries VALUES ('" + date + "', '" + time + "', '" + note + "')"
     db.execute(sqladd)
 
-def getAllEntries(db):
+def getAllEntries():
     entries = db.execute("SELECT date, time, note FROM entries").fetchall()
     return entries
 
-def getTodaysEntries(db):
+def getTodaysEntries():
     now = datetime.datetime.now()
     date = now.strftime("%d/%m/%Y")
     entries = db.execute("SELECT date, time, note FROM entries WHERE date LIKE '" + date + "'").fetchall()
     return entries
 
-def clearEntries(db):
+def clearEntries():
     db.execute("DELETE FROM entries")
     alertPopup("Entries Cleared", "All entries have been cleared.", 60)
 
@@ -71,10 +71,10 @@ def alertPopup(title, message, height=100):
     button.pack()
     mainloop()
 
-def addEntryPopup(db):
+def addEntryPopup():
     def submitForm(event=None):
         note = note_var.get()
-        logTime(db, note)
+        logTime(note)
         base.destroy()
 
     now = datetime.datetime.now()
@@ -102,30 +102,70 @@ def addEntryPopup(db):
     mainloop()
 
 def popupEntries(entries):
+    if len(entries) == 0:
+        alertPopup("track-time - No Entries", "There are no entries for this selection.\n", 75)
+    else:
+        base = Tk()
+        base.title("track-time - View Entries")
+        screenWidth = base.winfo_screenwidth()
+        screenHeight = base.winfo_screenheight()
+        xPos = screenWidth/4
+        yPos = screenHeight/4
+        base.geometry('+%d+%d' % (xPos, yPos))
+        table = TkTable(base,entries)
+        mainloop()
+
+def menuPopup():
+    title = "track-time - Menu"
+    message = "Welcome to track-time"
+    message2 = "To add an entry, run 'app.py add'\n"
     base = Tk()
-    base.title("track-time - View Entries")
+    base.title(title)
+    height = 220
+    width = 400
     screenWidth = base.winfo_screenwidth()
     screenHeight = base.winfo_screenheight()
-    xPos = screenWidth/4
-    yPos = screenHeight/4
-    base.geometry('+%d+%d' % (xPos, yPos))
-    table = TkTable(base,entries)
+    xPos = (screenWidth - width)/2
+    yPos = (screenHeight - height)/2
+    base.geometry('%dx%d+%d+%d' % (width, height, xPos, yPos))
+    window = Label(base, text=message, width=80, font=("Calibri", 12))
+    window.pack()
+    window2 = Label(base, text=message2, width=80, font=("Calibri", 12))
+    window2.pack()
+    button1 = Button(base, text="List All Entries", command=listAll, width=30, font=("Calibri", 12))
+    button1.pack()
+    button2 = Button(base, text="List Today's Entries", command=listToday, width=30, font=("Calibri", 12))
+    button2.pack()
+    button3 = Button(base, text="Clear All Entries", command=clearEntries, width=30, font=("Calibri", 12))
+    button3.pack()
+    button4 = Button(base, text="Exit", command=base.destroy, width=30, font=("Calibri", 12))
+    button4.pack()
     mainloop()
+
+def listAll():
+    popupEntries(getAllEntries())
+
+def listToday():
+    popupEntries(getTodaysEntries())
 
 def runApp():
     dbconnection = sqlite3.connect("track-time.db")
     global db
     db = dbconnection.cursor()
+    if checkTableExists() == False:
+        createTable()
     if len(sys.argv) > 2:
         alertPopup("track-time - Error", "Too many arguments.\n")
     else:
         if len(sys.argv) == 2:
             if sys.argv[1] == "listall":
-                popupEntries(getAllEntries(db))
+                #popupEntries(getAllEntries(db))
+                listAll(db)
             elif sys.argv[1] == "listtoday" or sys.argv[1] == "list":
-                popupEntries(getTodaysEntries(db))
+                #popupEntries(getTodaysEntries(db))
+                listToday()
             elif sys.argv[1] == "add":
-                addEntryPopup(db)
+                addEntryPopup()
             elif sys.argv[1] == "clear":
                 clearEntries(db)
             elif sys.argv[1] == "help":
@@ -133,7 +173,8 @@ def runApp():
             else:
                 alertPopup("track-time - Error", "Invalid argument.\n")
         else:
-            showHelp()
+            #showHelp()
+            menuPopup()
     dbconnection.commit()
     dbconnection.close()
 
