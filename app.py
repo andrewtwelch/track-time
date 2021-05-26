@@ -8,7 +8,12 @@ class TkTable:
         columns = len(data[0])
         for x in range(rows):
             for y in range(columns):
-                self.e = Entry(root, width=20, font=('Calibri',12))
+                if y == 0:
+                    self.e = Entry(root, width=10, font=('Calibri',12))
+                elif y == 1:
+                    self.e = Entry(root, width=11, font=('Calibri',12))
+                else:
+                    self.e = Entry(root, width=50, font=('Calibri',12))
                 self.e.grid(row=x, column=y)
                 self.e.insert(END, data[x][y])
 
@@ -33,7 +38,7 @@ def createTable(db, dbcon):
 def logTime(db, note):
     now = datetime.datetime.now()
     date = now.strftime("%d/%m/%Y")
-    time = now.strftime("%H:%M:%S")
+    time = now.strftime("%I:%M %p")
     sqladd = "INSERT INTO entries VALUES ('" + date + "', '" + time + "', '" + note + "')"
     db.execute(sqladd)
 
@@ -69,11 +74,13 @@ def alertPopup(title, message, height=100):
 def addEntryPopup(db):
     def submitForm(event=None):
         note = note_var.get()
-        print(note)
         logTime(db, note)
         base.destroy()
 
-    message = "Enter note for time entry\n"
+    now = datetime.datetime.now()
+    date = now.strftime("%d/%m/%Y")
+    time = now.strftime("%I:%M %p")
+    message = "Enter note for time entry\nDate: " + date + "\nTime: " + time
     base = Tk()
     base.title("track-time - Add Entry")
     note_var = StringVar()
@@ -115,7 +122,7 @@ def runApp():
         if len(sys.argv) == 2:
             if sys.argv[1] == "listall":
                 popupEntries(getAllEntries(db))
-            elif sys.argv[1] == "listtoday":
+            elif sys.argv[1] == "listtoday" or sys.argv[1] == "list":
                 popupEntries(getTodaysEntries(db))
             elif sys.argv[1] == "add":
                 addEntryPopup(db)
